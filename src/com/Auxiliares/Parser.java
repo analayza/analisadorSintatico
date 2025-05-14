@@ -1,4 +1,3 @@
-
 package com.Auxiliares;
 
 import java.io.IOException;
@@ -7,110 +6,97 @@ import com.Erro.LexerException;
 public class Parser {
 
   // Atributos
-
   private AnalisadorLexico analisadorLexico;
   private Token token;
   private String mensagemErro = "";
 
   public Parser(AnalisadorLexico analisadorLexico) {
-	
     this.analisadorLexico = analisadorLexico;
-	
   }
 
   public boolean parse() throws IOException, LexerException {
-	
     boolean resultado;
 
     token = analisadorLexico.pegarProximoToken();
-    
-    //símbolo/variável inicial da gramática que ele vai produzir a regra
     resultado = SE();
 
-    if ( resultado && token.getTipo() != Token.EOF ) {
-	
-      System.err.println( "\n Fim de arquivo esperado, token = " + token );
-		
+    if (resultado && token.getTipo() != Token.EOF) {
+      System.err.println("\n Fim de arquivo esperado, token = " + token);
       resultado = false;
-		
     }
 
-    if ( !resultado ) {
-	
-      mensagemErro = "Token não esperado: " + token;
-    
+    if (!resultado) {
+      mensagemErro = "Token n?o esperado: " + token;
     }
-    
+
     return resultado;
-	
   }
 
   public String errorMessage() {
-	
     return mensagemErro;
-	
+  }
+
+  private boolean verificarTiposAritmeticos(Token token1, Token token2) throws LexerException {
+    boolean valido = (ehOperandoNumerico(token1) && ehOperandoNumerico(token2));
+
+    if (!valido) {
+      throw new LexerException("Opera??o aritm?tica inv?lida entre " +
+              token1.toString() + " e " + token2.toString());
+    }
+    return true;
+  }
+
+  private boolean ehOperandoNumerico(Token token) {
+    if (token.getTipo() == Token.LITERALNUMERICO || token.getTipo() == Token.ID || token.getTipo() == Token.FLOAT) {
+      Object valor = token.getValor();
+      return !("true".equalsIgnoreCase(valor.toString()) || "false".equalsIgnoreCase(valor.toString()));
+    }
+    return false;
   }
 
   private boolean SE() throws IOException, LexerException {
-
     boolean resultado;
 
     System.out.print("SE[ if ");
 
-    if( match(Token.IF)){
+    if (match(Token.IF)) {
+      if (match(Token.PONTUACAO, Token.AP)) {
+        resultado = LE() && match(Token.PONTUACAO, Token.FP);
 
-      if( match( Token.PONTUACAO, Token.AP ) ) {
-
-        resultado =  LE() && match( Token.PONTUACAO, Token.FP );
-
-        if( match(Token.PONTUACAO, Token.AC) ){
-          resultado = comandos() && match( Token.PONTUACAO, Token.FC );
+        if (match(Token.PONTUACAO, Token.AC)) {
+          resultado = comandos() && match(Token.PONTUACAO, Token.FC);
+        } else {
+          resultado = false;
         }
-
-      }else{
+      } else {
         resultado = false;
       }
-
-    }else{
+    } else {
       resultado = false;
     }
 
     System.out.print(" ]se");
-
     return resultado;
-
   }
 
-
   private boolean CHAVES() throws IOException, LexerException {
-
     boolean resultado;
 
     System.out.print("Chaves[ { ");
 
-    if( match(Token.PONTUACAO, Token.AC) ){
-
-      resultado = comandos() && match( Token.PONTUACAO, Token.FC );
-
-    }else if (comando()){
-
+    if (match(Token.PONTUACAO, Token.AC)) {
+      resultado = comandos() && match(Token.PONTUACAO, Token.FC);
+    } else if (comando()) {
       resultado = true;
-
-    }else{
-
+    } else {
       resultado = false;
-
     }
 
-
     System.out.print(" ]CHAVES");
-
     return resultado;
-
   }
 
   private boolean comando() throws IOException, LexerException {
-
     boolean resultado;
 
     System.out.print("comando[ { ");
@@ -118,297 +104,181 @@ public class Parser {
     resultado = match(Token.ID) && match(Token.AT) && LE();
 
     System.out.print(" ]CHAVES");
-
     return resultado;
-
   }
 
   private boolean comandos() throws IOException, LexerException {
     return true;
   }
 
-    private boolean LE() throws IOException, LexerException {
-	  
+  private boolean LE() throws IOException, LexerException {
     boolean resultado;
-	
-    System.out.print( "LE[ " );
-    
-    if( !RE() ) {
-    
-      return false; 
-    
+
+    System.out.print("LE[ ");
+
+    if (!RE()) {
+      return false;
     }
-    
-    if( match( Token.LOG, Token.AND ) || match( Token.LOG, Token.OR ) ) {
-    
+
+    if (match(Token.LOG, Token.AND) || match(Token.LOG, Token.OR)) {
       resultado = LE();
-      
     } else {
-    	
-      System.out.print( " €" ); //está sozinho!
-      
+      System.out.print(" ?");
       resultado = true;
-      
     }
-    
-    System.out.print( " ]le" );
-    
+
+    System.out.print(" ]le");
     return resultado;
-		
   }
 
   private boolean RE() throws IOException, LexerException {
-	    
     boolean resultado;
-	
-    System.out.print( "RE[ " );
-    
-    if( !AE() ) {
-    	
+
+    System.out.print("RE[ ");
+
+    if (!AE()) {
       return false;
-      
     }
-    
-    if( match( Token.RELOP, Token.GT ) || match( Token.RELOP, Token.GE ) || match( Token.RELOP, Token.LT ) 
-     || match( Token.RELOP, Token.LE ) || match( Token.RELOP , Token.EQ ) ) {
-    	
-      resultado = RE();
-        
-    } else {
-    	
-      System.out.print( " €" );
-    	 
-      resultado = true;
-      
+
+    if (match(Token.RELOP, Token.GT) || match(Token.RELOP, Token.GE) ||
+            match(Token.RELOP, Token.LT) || match(Token.RELOP, Token.LE) ||
+            match(Token.RELOP, Token.EQ)) {
+      if (!AE()) return false;
     }
-    
-    System.out.print( " ]re" );
-    
-    return resultado;
-		
+
+    System.out.print(" ]re");
+    return true;
   }
 
   private boolean AE() throws IOException, LexerException {
-	    
     boolean resultado;
-    
-    System.out.print( "AE[ " );
+    System.out.print("AE[ ");
 
-    if( !ME() ) {
-    	
-      return false;
-      
+    Token operando1 = token;
+    if (!ME()) return false;
+
+    while (token.getTipo() == Token.OP && ((Integer) token.getValor() == Token.AD || (Integer) token.getValor() == Token.SUB)) {
+      int operador = (Integer) token.getValor();
+      match(Token.OP, operador);
+
+      Token operando2 = token;
+      if (!ME()) return false;
+
+      if (!verificarTiposAritmeticos(operando1, operando2)) return false;
+
+      operando1 = operando2;
     }
-    
-    if( match( Token.OP, Token.AD ) || match( Token.OP, Token.SUB ) ) {
-    	
-      resultado = AE();
-      
-    } else {
-    	
-      System.out.print( " €" );
-    	 
-      resultado = true;
-      
-    }
-	
-    System.out.print( " ]ae" );
-    
-    return resultado;
-	    
+
+    System.out.print(" ]ae");
+    return true;
   }
 
-  private boolean ME() throws IOException, LexerException {
+  private boolean ME() throws LexerException, IOException {
+    Token operando1 = token;
+    if (!UE()) return false;
 
-    boolean resultado;
-	
-    System.out.print( "ME[ " );
-    
-    if( !UE() ) {
-    	
-      return false;
-      
+    while (token.getTipo() == Token.OP &&
+            ((Integer) token.getValor() == Token.MUL ||
+                    (Integer) token.getValor() == Token.DIV)){
+
+      int operador = (Integer) token.getValor();
+      match(Token.OP, operador);
+
+      Token operando2 = token;
+      if (!UE()) return false;
+
+      if (!verificarTiposAritmeticos(operando1, operando2)) return false;
+
+      operando1 = operando2;
     }
 
-    if( match( Token.OP, Token.MUL ) || match( Token.OP, Token.DIV ) ) {
-    	
-      resultado = ME();
-      
-    } else {
-    
-      System.out.print( " €" );
-    	 
-      resultado = true;
-      
-    }
-    
-    System.out.print( " ]me " );
-    
-    return resultado;
-
+    return true;
   }
 
   private boolean UE() throws IOException, LexerException {
-
     boolean resultado;
+    System.out.print("UE[ ");
 
-    System.out.print( "UE[ " );
-
-    if( match( Token.PONTUACAO, Token.AP ) ) {
-    	
-      resultado = LE() && match( Token.PONTUACAO, Token.FP );
-      
-    } else if( match( Token.ID ) || match( Token.LITERALNUMERICO ) ) { //como faríamos para ele aceitar literal numérico?
-    	      
+    if (match(Token.PONTUACAO, Token.AP)) {
+      resultado = LE() && match(Token.PONTUACAO, Token.FP);
+    } else if (match(Token.ID) || match(Token.LITERALNUMERICO) || match(Token.TRUE) || match(Token.FALSE) || match(Token.LITERALSTRING) || match(Token.FLOAT)) {
       resultado = true;
-      
-    } else if( match( Token.OP, Token.AD ) || match( Token.OP, Token.SUB ) || match( Token.LOG, Token.NOT ) ) {
-    	
+    } else if (match(Token.OP, Token.AD) || match(Token.OP, Token.SUB) || match(Token.LOG, Token.NOT)) {
       resultado = UE();
-      
     } else {
-    	
       resultado = false;
-      
     }
-    
-    System.out.print( " ]ue " );
-    
+
+    System.out.print(" ]ue ");
     return resultado;
-    
   }
 
   private boolean match(int tipoToken) throws IOException, LexerException {
-
     boolean resultado;
-    
-    if ( token.getTipo() == tipoToken ) {
-           
-      if( tipoToken == Token.ID ) {
-    	  
-        System.out.print( "Id" );
-    	  
-      }
-      
-      if( tipoToken == Token.LITERALNUMERICO ) {
-    	  
-        System.out.print( token.getValor() );
-    	  
-      }
 
+    if (token.getTipo() == tipoToken) {
+      imprimirToken(token);
       token = analisadorLexico.pegarProximoToken();
-      
       resultado = true;
-		
-    }else {
-	    	
-      resultado = false;
-    
-    }
-    
-    return resultado;
-	
-  }
-  
-  private boolean match(int tipoToken, int valorToken) throws IOException, LexerException {
-		
-    boolean resultado;
-	    
-    if ( token.getTipo() == tipoToken  && (Integer)token.getValor() == valorToken )  {
-	
-      switch( tipoToken ) {
-      
-        case Token.LOG: {
-      
-          if( valorToken == Token.AND ) {
-        	
-            System.out.print( " && " );
-          
-          } else if( valorToken == Token.NOT){
-
-            System.out.print( " ! " );
-
-          }else {
-        	
-            System.out.print( " || " );
-            
-          }
-      
-        }break;
-        
-        case Token.OP : {
-      
-          switch (valorToken) {
-	
-            case Token.AD: System.out.print( "+ " );	
-		         break;
-        
-            case Token.SUB: System.out.print( "-" );	
-		        break;
-
-            case Token.DIV: System.out.print( "/" );	
-		         break;
-
-            case Token.MUL: System.out.print( "*" );	
-		         break;
-
-          }
-          
-        }break;
-        
-        case Token.PONTUACAO: {
-    
-          if( valorToken == Token.AP ) {
-        	  
-            System.out.print( "( " );  
-          
-          } else if( valorToken == Token.FP) {
-        	
-            System.out.print( ") " ); 
-          
-          }
-          
-        }break;
-
-        //operador relacional
-        case Token.RELOP : {
-            
-          switch (valorToken) {
-  	
-            case Token.GT: System.out.print( " > " );	
-  		          break;
-          
-            case Token.GE: System.out.print( " >= " );	
-  		         break;
-
-            case Token.LT: System.out.print( " < " );	
-  		          break;
-
-            case Token.LE: System.out.print( " <= " );	
-  		          break;
-  		          
-            case Token.EQ: System.out.print( " == " );	
-	          break;
-      
-
-          }
-          
-        }break;
-
-      }
-      
-      token = analisadorLexico.pegarProximoToken();
-      
-	  resultado = true;
-		
     } else {
-	  
       resultado = false;
-    
     }
-	
+
     return resultado;
-	
   }
 
+  private boolean match(int tipoToken, int valorToken) throws IOException, LexerException {
+    boolean resultado;
+
+    if (token.getTipo() == tipoToken && (Integer) token.getValor() == valorToken) {
+      imprimirToken(token);
+      token = analisadorLexico.pegarProximoToken();
+      resultado = true;
+    } else {
+      resultado = false;
+    }
+
+    return resultado;
+  }
+
+  private void imprimirToken(Token token) {
+    switch (token.getTipo()) {
+      case Token.ID -> System.out.print("Id");
+      case Token.LITERALNUMERICO -> System.out.print(token.getValor());
+      case Token.TRUE -> System.out.print("true");
+      case Token.FALSE -> System.out.print("false");
+      case Token.OP -> {
+        switch ((Integer) token.getValor()) {
+          case Token.AD -> System.out.print("+");
+          case Token.SUB -> System.out.print("-");
+          case Token.MUL -> System.out.print("*");
+          case Token.DIV -> System.out.print("/");
+        }
+      }
+      case Token.LOG -> {
+        switch ((Integer) token.getValor()) {
+          case Token.AND -> System.out.print("&&");
+          case Token.OR -> System.out.print("||");
+          case Token.NOT -> System.out.print("!");
+        }
+      }
+      case Token.RELOP -> {
+        switch ((Integer) token.getValor()) {
+          case Token.GT -> System.out.print(">");
+          case Token.GE -> System.out.print(">=");
+          case Token.LT -> System.out.print("<");
+          case Token.LE -> System.out.print("<=");
+          case Token.EQ -> System.out.print("==");
+        }
+      }
+      case Token.PONTUACAO -> {
+        switch ((Integer) token.getValor()) {
+          case Token.AP -> System.out.print("(");
+          case Token.FP -> System.out.print(")");
+          case Token.AC -> System.out.print("{");
+          case Token.FC -> System.out.print("}");
+        }
+      }
+    }
+  }
 }
