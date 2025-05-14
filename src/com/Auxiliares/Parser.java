@@ -26,7 +26,7 @@ public class Parser {
     }
 
     if (!resultado) {
-      mensagemErro = "Token n?o esperado: " + token;
+      mensagemErro = "Token nao esperado: " + token;
     }
 
     return resultado;
@@ -40,7 +40,7 @@ public class Parser {
     boolean valido = (ehOperandoNumerico(token1) && ehOperandoNumerico(token2));
 
     if (!valido) {
-      throw new LexerException("Opera??o aritm?tica inv?lida entre " +
+      throw new LexerException("Operacao aritmetica invalida entre " +
               token1.toString() + " e " + token2.toString());
     }
     return true;
