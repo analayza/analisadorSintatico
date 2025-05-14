@@ -26,8 +26,9 @@ public class Token {
   public static final int LITERALSTRING  = 18;
   public static final int LITERALCHAR = 19;
   public static final int PONTUACAO = 20;
-
-  
+  public static final int TRUE = 21;
+  public static final int FLOAT = 22;
+  public static final int LAMBDA = 23;
   // Valor fim de Arquivo
   
   public static final int EOF   = 100;
@@ -212,8 +213,13 @@ public class Token {
 	    		    break;			
 
 	    case PONTUACAO: resultado = "pontuação";
-	    	        break;			
-
+	    	        break;
+        case TRUE: resultado = "true";
+              break;
+        case FLOAT: resultado = "float";
+              break;
+        case LAMBDA: resultado = "lambda";
+              break;
       }
 	
       return resultado;
